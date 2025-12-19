@@ -9,7 +9,7 @@ def evaluate_and_plot(y_true, y_pred, class_names, save_dir=None, title_prefix="
     Computes:
       - classification report
       - confusion matrix
-      - class-wise accuracy
+      - class-wise accuracy (percentages)
       - saves confusion matrix + bar chart (optional)
 
     Args:
@@ -33,15 +33,15 @@ def evaluate_and_plot(y_true, y_pred, class_names, save_dir=None, title_prefix="
     cm = confusion_matrix(y_true, y_pred)
 
     # -------------------------
-    # Class-wise Accuracy
+    # Class-wise Accuracy (percent)
     # -------------------------
     class_accuracy = {
-        class_names[i]: cm[i, i] / cm[i].sum() for i in range(len(class_names))
+        class_names[i]: (cm[i, i] / cm[i].sum()) * 100 for i in range(len(class_names))
     }
 
-    print("\nClass-wise Accuracy:")
+    print("\nClass-wise Accuracy (%):")
     for cls, acc in class_accuracy.items():
-        print(f"{cls}: {acc:.4f}")
+        print(f"{cls}: {acc:.1f}%")
 
     # -------------------------
     # Plotting (optional)
@@ -51,7 +51,7 @@ def evaluate_and_plot(y_true, y_pred, class_names, save_dir=None, title_prefix="
 
         # Confusion Matrix plot
         plt.figure(figsize=(6, 5))
-        plt.imshow(cm)
+        plt.imshow(cm, cmap="Blues")
         plt.title(f"{title_prefix} Confusion Matrix")
         plt.colorbar()
         plt.xticks(range(len(class_names)), class_names)
@@ -74,13 +74,25 @@ def evaluate_and_plot(y_true, y_pred, class_names, save_dir=None, title_prefix="
         plt.savefig(os.path.join(save_dir, "confusion_matrix.png"))
         plt.close()
 
-        # Class Accuracy bar chart
+        # Class Accuracy bar chart (percentages)
         plt.figure(figsize=(6, 4))
-        plt.bar(class_accuracy.keys(), class_accuracy.values())
-        plt.ylim(0, 1)
-        plt.ylabel("Accuracy")
+        bars = plt.bar(class_accuracy.keys(), class_accuracy.values(), color="skyblue")
+        plt.ylim(0, 100)
+        plt.ylabel("Accuracy (%)")
         plt.title(f"{title_prefix} Class-wise Accuracy")
         plt.grid(axis="y", alpha=0.3)
+
+        # Add labels on top of bars
+        for bar, acc in zip(bars, class_accuracy.values()):
+            plt.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + 1,
+                f"{acc:.1f}%",
+                ha="center",
+                va="bottom",
+                fontsize=10,
+            )
+
         plt.tight_layout()
         plt.savefig(os.path.join(save_dir, "class_accuracy.png"))
         plt.close()

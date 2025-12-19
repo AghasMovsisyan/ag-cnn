@@ -1,3 +1,4 @@
+import os
 import torch
 from torch.utils.data import DataLoader, random_split
 
@@ -9,8 +10,7 @@ from utils.metrics import evaluate_and_plot
 DATA_DIR = "data/train"
 BATCH_SIZE = 8
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
-class_names = ["Car", "Human", "Noise"]
+CLASS_NAMES = ["Car", "Human", "Noise"]
 
 
 full_dataset = RadioDataset(DATA_DIR, train=True)
@@ -27,11 +27,13 @@ _, _, test_ds = random_split(
 
 test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
 
+model_path = "models/run_15/best_model.pth"
+assert os.path.exists(model_path), f"Model path does not exist: {model_path}"
 
-model = AG_CNN(in_channels=3, num_classes=len(class_names)).to(DEVICE)
-model.load_state_dict(torch.load("models/model_epoch23.pth", map_location=DEVICE))
+model = AG_CNN(in_channels=3, num_classes=len(CLASS_NAMES)).to(DEVICE)
+model.load_state_dict(torch.load(model_path, map_location=DEVICE))
 model.eval()
-
+print(f">>> Loaded best model from {model_path}")
 
 all_preds, all_labels = [], []
 
@@ -44,16 +46,16 @@ with torch.no_grad():
         all_preds.extend(preds.cpu().numpy())
         all_labels.extend(labels.cpu().numpy())
 
+test_plots_dir = "models/run_15/test_plots"
+os.makedirs(test_plots_dir, exist_ok=True)
 
 evaluate_and_plot(
     y_true=all_labels,
     y_pred=all_preds,
-    class_names=class_names,
-    save_dir="models/test_plots",
+    class_names=CLASS_NAMES,
+    save_dir=test_plots_dir,
     title_prefix="Test",
 )
 
-
 test_acc = sum(p == y for p, y in zip(all_preds, all_labels)) / len(all_labels)
-
 print(f"\nFinal TEST Accuracy = {test_acc:.4f}")

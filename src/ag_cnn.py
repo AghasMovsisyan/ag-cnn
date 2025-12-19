@@ -165,7 +165,9 @@ if __name__ == "__main__":
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     dataset = RadioDataset("data/train", train=True)
     model = AG_CNN(in_channels=3, num_classes=3).to(DEVICE)
-    model.load_state_dict(torch.load("models/best_model.pth", map_location=DEVICE))
+    model.load_state_dict(
+        torch.load("models/run_14/best_model.pth", map_location=DEVICE)
+    )
 
     save_attention_samples(
         dataset, model, output_root="attention_samples", device=DEVICE

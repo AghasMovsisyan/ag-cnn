@@ -13,7 +13,7 @@ from utils.metrics import evaluate_and_plot
 DATA_DIR = "data/train"
 BATCH_SIZE = 8
 LR = 5e-4
-EPOCHS = 5
+EPOCHS = 80
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 class_names = ["Car", "Human", "Noise"]
@@ -31,13 +31,12 @@ test_size = total_size - train_size - val_size
 print("Dataset sizes:", train_size, val_size, test_size)
 
 g = torch.Generator().manual_seed(42)
-train_ds, val_ds, test_ds = random_split(
+train_ds, val_ds, _ = random_split(
     full_dataset, [train_size, val_size, test_size], generator=g
 )
 
 train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
 val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False)
-test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
 
 model = AG_CNN(in_channels=3, num_classes=num_classes).to(DEVICE)
 criterion = nn.CrossEntropyLoss()
@@ -50,7 +49,6 @@ os.makedirs(run_dir, exist_ok=True)
 print(f">>> Training session folder: {run_dir}")
 
 best_val_acc = 0.0
-
 
 for epoch in range(EPOCHS):
     model.train()
@@ -78,25 +76,36 @@ for epoch in range(EPOCHS):
 
     model.eval()
     all_preds, all_labels = [], []
+    val_running_loss = 0.0
+
+    val_plots_dir = os.path.join(run_dir, "validation_plots")
+    os.makedirs(val_plots_dir, exist_ok=True)
 
     with torch.no_grad():
         for imgs, labels in val_loader:
             imgs, labels = imgs.to(DEVICE), labels.to(DEVICE)
             logits = model(imgs)
+            loss = criterion(logits, labels)
+            val_running_loss += loss.item()
+
             preds = logits.argmax(1)
             all_preds.extend(preds.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
 
+    val_loss = val_running_loss / len(val_loader)
     val_acc = (
         (torch.tensor(all_preds) == torch.tensor(all_labels)).float().mean().item()
     )
-    print(f"Epoch {epoch+1} | Validation Acc: {val_acc:.4f}")
+
+    print(
+        f"Epoch {epoch+1} | Validation Loss: {val_loss:.4f} | Validation Acc: {val_acc:.4f}"
+    )
 
     evaluate_and_plot(
         y_true=all_labels,
         y_pred=all_preds,
         class_names=class_names,
-        save_dir=None,
+        save_dir=val_plots_dir,
         title_prefix=f"Epoch {epoch+1} Validation",
     )
 
@@ -110,26 +119,4 @@ for epoch in range(EPOCHS):
         torch.save(model.state_dict(), best_model_path)
         print(">>> Best model updated")
 
-
-best_model = AG_CNN(in_channels=3, num_classes=num_classes).to(DEVICE)
-best_model.load_state_dict(torch.load(best_model_path))
-best_model.eval()
-
-all_preds, all_labels = [], []
-
-with torch.no_grad():
-    for imgs, labels in test_loader:
-        imgs, labels = imgs.to(DEVICE), labels.to(DEVICE)
-        logits = best_model(imgs)
-        preds = logits.argmax(1)
-        all_preds.extend(preds.cpu().numpy())
-        all_labels.extend(labels.cpu().numpy())
-
-plots_dir = os.path.join(run_dir, "plots")
-evaluate_and_plot(
-    y_true=all_labels,
-    y_pred=all_preds,
-    class_names=class_names,
-    save_dir=plots_dir,
-    title_prefix="Test",
-)
+print(f">>> Training finished. Best model saved at: {best_model_path}")
