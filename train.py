@@ -8,7 +8,7 @@ import glob
 
 from src.dataset import RadioDataset
 from src.ag_cnn import AG_CNN
-from utils.metrics import evaluate_and_plot 
+from utils.metrics import evaluate_and_plot
 
 DATA_DIR = "data/train"
 BATCH_SIZE = 8
@@ -72,7 +72,9 @@ for epoch in range(EPOCHS):
 
     train_loss = running_loss / len(train_loader)
     train_acc = correct / total
-    print(f"Epoch {epoch+1} | Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f}")
+    print(
+        f"Epoch {epoch+1} | Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f}"
+    )
 
     model.eval()
     all_preds, all_labels = [], []
@@ -85,7 +87,9 @@ for epoch in range(EPOCHS):
             all_preds.extend(preds.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
 
-    val_acc = (torch.tensor(all_preds) == torch.tensor(all_labels)).float().mean().item()
+    val_acc = (
+        (torch.tensor(all_preds) == torch.tensor(all_labels)).float().mean().item()
+    )
     print(f"Epoch {epoch+1} | Validation Acc: {val_acc:.4f}")
 
     evaluate_and_plot(
@@ -93,7 +97,7 @@ for epoch in range(EPOCHS):
         y_pred=all_preds,
         class_names=class_names,
         save_dir=None,
-        title_prefix=f"Epoch {epoch+1} Validation"
+        title_prefix=f"Epoch {epoch+1} Validation",
     )
 
     epoch_model_path = os.path.join(run_dir, f"model_epoch{epoch}.pth")
@@ -127,5 +131,5 @@ evaluate_and_plot(
     y_pred=all_preds,
     class_names=class_names,
     save_dir=plots_dir,
-    title_prefix="Test"
+    title_prefix="Test",
 )

@@ -3,13 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, classification_report
 
-def evaluate_and_plot(
-    y_true,
-    y_pred,
-    class_names,
-    save_dir=None,
-    title_prefix=""
-):
+
+def evaluate_and_plot(y_true, y_pred, class_names, save_dir=None, title_prefix=""):
     """
     Computes:
       - classification report
@@ -28,9 +23,7 @@ def evaluate_and_plot(
     # -------------------------
     # Classification report
     # -------------------------
-    report = classification_report(
-        y_true, y_pred, target_names=class_names
-    )
+    report = classification_report(y_true, y_pred, target_names=class_names)
     print(f"\n{title_prefix} Classification Report:\n")
     print(report)
 
@@ -43,8 +36,7 @@ def evaluate_and_plot(
     # Class-wise Accuracy
     # -------------------------
     class_accuracy = {
-        class_names[i]: cm[i, i] / cm[i].sum()
-        for i in range(len(class_names))
+        class_names[i]: cm[i, i] / cm[i].sum() for i in range(len(class_names))
     }
 
     print("\nClass-wise Accuracy:")
@@ -68,9 +60,12 @@ def evaluate_and_plot(
         for i in range(len(class_names)):
             for j in range(len(class_names)):
                 plt.text(
-                    j, i, cm[i, j],
-                    ha="center", va="center",
-                    color="white" if cm[i, j] > cm.max() / 2 else "black"
+                    j,
+                    i,
+                    cm[i, j],
+                    ha="center",
+                    va="center",
+                    color="white" if cm[i, j] > cm.max() / 2 else "black",
                 )
 
         plt.xlabel("Predicted")

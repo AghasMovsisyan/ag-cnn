@@ -22,9 +22,7 @@ test_size = total_size - train_size - val_size
 
 g = torch.Generator().manual_seed(42)
 _, _, test_ds = random_split(
-    full_dataset,
-    [train_size, val_size, test_size],
-    generator=g
+    full_dataset, [train_size, val_size, test_size], generator=g
 )
 
 test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
@@ -52,12 +50,10 @@ evaluate_and_plot(
     y_pred=all_preds,
     class_names=class_names,
     save_dir="models/test_plots",
-    title_prefix="Test"
+    title_prefix="Test",
 )
 
 
-test_acc = sum(
-    p == y for p, y in zip(all_preds, all_labels)
-) / len(all_labels)
+test_acc = sum(p == y for p, y in zip(all_preds, all_labels)) / len(all_labels)
 
 print(f"\nFinal TEST Accuracy = {test_acc:.4f}")

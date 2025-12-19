@@ -4,14 +4,15 @@ from src.ag_cnn import AG_CNN
 from tabulate import tabulate
 from collections import defaultdict
 
+
 def count_parameters(
-        model: torch.nn.Module,
-        grouped: bool = False,
-        save_to_file: bool = False,
-        file_path: str = "params.csv",
-        only_trainable: bool = False,
-        min_params: int = 0,
-        print_results: bool = True
+    model: torch.nn.Module,
+    grouped: bool = False,
+    save_to_file: bool = False,
+    file_path: str = "params.csv",
+    only_trainable: bool = False,
+    min_params: int = 0,
+    print_results: bool = True,
 ) -> tuple[int, int]:
     """
     Analyzes and summarizes the parameters of a PyTorch model.
@@ -52,7 +53,7 @@ def count_parameters(
             if only_trainable and not param.requires_grad:
                 continue
 
-            base_module = name.split('.')[0] if '.' in name else name
+            base_module = name.split(".")[0] if "." in name else name
             count = param.numel()
 
             if count < min_params:
@@ -62,7 +63,9 @@ def count_parameters(
             if param.requires_grad:
                 grouped_params[base_module]["trainable"] += count
 
-        sorted_items = sorted(grouped_params.items(), key=lambda x: x[1]["total"], reverse=True)
+        sorted_items = sorted(
+            grouped_params.items(), key=lambda x: x[1]["total"], reverse=True
+        )
 
         table = []
         total_all = trainable_all = 0
@@ -95,14 +98,14 @@ def count_parameters(
         table.sort(key=lambda x: x[1], reverse=True)
 
     if save_to_file:
-        ext = file_path.split('.')[-1].lower()
-        with open(file_path, mode='w', newline='') as f:
-            if ext == 'csv':
+        ext = file_path.split(".")[-1].lower()
+        with open(file_path, mode="w", newline="") as f:
+            if ext == "csv":
                 writer = csv.writer(f)
                 writer.writerow(headers)
                 for row in table:
                     writer.writerow(row)
-            elif ext == 'txt':
+            elif ext == "txt":
                 f.write(tabulate(table, headers=headers, tablefmt="pretty"))
             else:
                 print(f"[!] Unsupported file extension: .{ext} — use .csv or .txt")
@@ -117,4 +120,5 @@ def count_parameters(
 
     return total_all, trainable_all
 
-count_parameters(model=AG_CNN(3,3))
+
+count_parameters(model=AG_CNN(3, 3))
