@@ -10,14 +10,16 @@ from src.dataset import RadioDataset
 from src.ag_cnn import AG_CNN
 from utils.metrics import evaluate_and_plot
 
+
 DATA_DIR = "data/train"
-BATCH_SIZE = 8
+BATCH_SIZE = 4
 LR = 5e-4
-EPOCHS = 80
+EPOCHS = 45
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 class_names = ["Car", "Human", "Noise"]
 num_classes = len(class_names)
+
 
 os.makedirs("models", exist_ok=True)
 
@@ -49,6 +51,7 @@ os.makedirs(run_dir, exist_ok=True)
 print(f">>> Training session folder: {run_dir}")
 
 best_val_acc = 0.0
+best_model_path = ""
 
 for epoch in range(EPOCHS):
     model.train()
@@ -78,9 +81,6 @@ for epoch in range(EPOCHS):
     all_preds, all_labels = [], []
     val_running_loss = 0.0
 
-    val_plots_dir = os.path.join(run_dir, "validation_plots")
-    os.makedirs(val_plots_dir, exist_ok=True)
-
     with torch.no_grad():
         for imgs, labels in val_loader:
             imgs, labels = imgs.to(DEVICE), labels.to(DEVICE)
@@ -101,14 +101,6 @@ for epoch in range(EPOCHS):
         f"Epoch {epoch+1} | Validation Loss: {val_loss:.4f} | Validation Acc: {val_acc:.4f}"
     )
 
-    evaluate_and_plot(
-        y_true=all_labels,
-        y_pred=all_preds,
-        class_names=class_names,
-        save_dir=val_plots_dir,
-        title_prefix=f"Epoch {epoch+1} Validation",
-    )
-
     epoch_model_path = os.path.join(run_dir, f"model_epoch{epoch}.pth")
     torch.save(model.state_dict(), epoch_model_path)
     print(f">>> Saved epoch model: {epoch_model_path}")
@@ -120,3 +112,30 @@ for epoch in range(EPOCHS):
         print(">>> Best model updated")
 
 print(f">>> Training finished. Best model saved at: {best_model_path}")
+print(">>> Evaluating best model on validation set...")
+
+model.load_state_dict(torch.load(best_model_path))
+model.eval()
+
+all_preds, all_labels = [], []
+
+with torch.no_grad():
+    for imgs, labels in val_loader:
+        imgs, labels = imgs.to(DEVICE), labels.to(DEVICE)
+        logits = model(imgs)
+        preds = logits.argmax(1)
+        all_preds.extend(preds.cpu().numpy())
+        all_labels.extend(labels.cpu().numpy())
+
+best_plots_dir = os.path.join(run_dir, "best_model_plots")
+os.makedirs(best_plots_dir, exist_ok=True)
+
+evaluate_and_plot(
+    y_true=all_labels,
+    y_pred=all_preds,
+    class_names=class_names,
+    save_dir=best_plots_dir,
+    title_prefix="Best Model Validation",
+)
+
+print(f">>> Evaluation finished. Plots saved at: {best_plots_dir}")
