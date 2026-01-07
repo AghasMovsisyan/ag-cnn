@@ -82,7 +82,7 @@ class AG_CNN(nn.Module):
 
         features = torch.cat([f1, f2, f3], dim=1)
         logits = self.fc(features)
-        
+
         if return_att:
             return logits, [att1, att2, att3]
 

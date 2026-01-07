@@ -16,9 +16,7 @@ def main():
     output_root = os.path.join("attention_samples", run_name)
 
     model = AG_CNN(in_channels=3, num_classes=3).to(device)
-    model.load_state_dict(
-        torch.load(model_path, map_location=device)
-    )
+    model.load_state_dict(torch.load(model_path, map_location=device))
 
     save_attention_samples_by_class(
         dataset=dataset,
@@ -28,7 +26,6 @@ def main():
         device=device,
         num_samples=6000,
     )
-
 
 
 if __name__ == "__main__":

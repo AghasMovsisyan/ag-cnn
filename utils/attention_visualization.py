@@ -5,6 +5,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import random
 
+
 def save_attention_samples_by_class(
     dataset,
     model,
@@ -47,19 +48,28 @@ def save_attention_samples_by_class(
 
             # Save original image
             input_np = img.permute(1, 2, 0).cpu().numpy()
-            input_np = (input_np - input_np.min()) / (input_np.max() - input_np.min() + 1e-8)
+            input_np = (input_np - input_np.min()) / (
+                input_np.max() - input_np.min() + 1e-8
+            )
             plt.imsave(os.path.join(sample_dir, "original.png"), input_np)
 
             # Save attention maps and overlays
             for i, att in enumerate(att_maps):
                 att_np = att[0, 0].cpu().numpy()
-                att_resized = np.array(
-                    Image.fromarray((att_np * 255).astype(np.uint8)).resize(
-                        (input_np.shape[1], input_np.shape[0])
+                att_resized = (
+                    np.array(
+                        Image.fromarray((att_np * 255).astype(np.uint8)).resize(
+                            (input_np.shape[1], input_np.shape[0])
+                        )
                     )
-                ) / 255.0
+                    / 255.0
+                )
 
-                plt.imsave(os.path.join(sample_dir, f"att_map_{i+1}.png"), att_resized, cmap="jet")
+                plt.imsave(
+                    os.path.join(sample_dir, f"att_map_{i+1}.png"),
+                    att_resized,
+                    cmap="jet",
+                )
                 overlay = 0.5 * input_np + 0.5 * plt.cm.jet(att_resized)[:, :, :3]
                 plt.imsave(os.path.join(sample_dir, f"overlay_{i+1}.png"), overlay)
 
