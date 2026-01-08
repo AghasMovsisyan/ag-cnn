@@ -10,7 +10,7 @@ def main():
 
     dataset = RadioDataset("data/train", train=True)
 
-    model_path = "models/run_20/best_model.pth"
+    model_path = "models/run_34/best_model.pth"
 
     run_name = os.path.basename(os.path.dirname(model_path))
     output_root = os.path.join("attention_samples", run_name)

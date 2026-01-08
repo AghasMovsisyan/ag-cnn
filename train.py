@@ -12,7 +12,7 @@ from utils.metrics import evaluate_and_plot
 
 
 DATA_DIR = "data/train"
-BATCH_SIZE = 4
+BATCH_SIZE = 8
 LR = 5e-4
 EPOCHS = 45
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
