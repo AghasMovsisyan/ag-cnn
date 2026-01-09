@@ -27,7 +27,7 @@ _, _, test_ds = random_split(
 
 test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
 
-model_path = "models/run_34/best_model.pth"
+model_path = "models/run_47/best_model.pth"
 assert os.path.exists(model_path), f"Model path does not exist: {model_path}"
 
 model = AG_CNN(in_channels=3, num_classes=len(CLASS_NAMES)).to(DEVICE)
@@ -46,7 +46,7 @@ with torch.no_grad():
         all_preds.extend(preds.cpu().numpy())
         all_labels.extend(labels.cpu().numpy())
 
-test_plots_dir = "models/run_34/test_plots"
+test_plots_dir = "models/run_47/test_plots"
 os.makedirs(test_plots_dir, exist_ok=True)
 
 evaluate_and_plot(

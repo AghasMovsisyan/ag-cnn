@@ -26,7 +26,9 @@ class AttentionGate(nn.Module):
         f = self.relu(theta_x + psi_g)
 
         att_map = F.softmax(self.phi(f), dim=1)
-        return x * att_map, att_map
+
+        out = x + x * att_map
+        return out, att_map
 
 
 def conv_block(in_ch, out_ch):
@@ -41,7 +43,7 @@ def conv_block(in_ch, out_ch):
 
 
 class AG_CNN(nn.Module):
-    def __init__(self, in_channels=3, num_classes=3, dropout_p=0.2):
+    def __init__(self, in_channels=3, num_classes=3, dropout_p=0.3):
         super().__init__()
 
         self.conv1 = conv_block(in_channels, 4)

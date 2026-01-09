@@ -14,12 +14,11 @@ from utils.metrics import evaluate_and_plot
 DATA_DIR = "data/train"
 BATCH_SIZE = 8
 LR = 5e-4
-EPOCHS = 45
+EPOCHS = 80
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 class_names = ["Car", "Human", "Noise"]
 num_classes = len(class_names)
-
 
 os.makedirs("models", exist_ok=True)
 
@@ -41,13 +40,28 @@ train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
 val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False)
 
 model = AG_CNN(in_channels=3, num_classes=num_classes).to(DEVICE)
-criterion = nn.CrossEntropyLoss()
+
+class_weights = torch.tensor([1.5, 1.1, 0.5]).to(DEVICE)
+
+
+criterion = nn.CrossEntropyLoss(
+    weight=class_weights,
+    label_smoothing=0.05
+)
+
+
 optimizer = optim.Adam(model.parameters(), lr=LR)
+
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer, mode="max", factor=0.5, patience=5
+)
+
 
 existing_runs = glob.glob("models/run_*")
 run_id = len(existing_runs)
 run_dir = f"models/run_{run_id}"
 os.makedirs(run_dir, exist_ok=True)
+
 print(f">>> Training session folder: {run_dir}")
 
 best_val_acc = 0.0
@@ -73,6 +87,7 @@ for epoch in range(EPOCHS):
 
     train_loss = running_loss / len(train_loader)
     train_acc = correct / total
+
     print(
         f"Epoch {epoch+1} | Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f}"
     )
@@ -101,9 +116,9 @@ for epoch in range(EPOCHS):
         f"Epoch {epoch+1} | Validation Loss: {val_loss:.4f} | Validation Acc: {val_acc:.4f}"
     )
 
+    scheduler.step(val_acc)
     epoch_model_path = os.path.join(run_dir, f"model_epoch{epoch}.pth")
     torch.save(model.state_dict(), epoch_model_path)
-    print(f">>> Saved epoch model: {epoch_model_path}")
 
     if val_acc > best_val_acc:
         best_val_acc = val_acc
@@ -112,7 +127,6 @@ for epoch in range(EPOCHS):
         print(">>> Best model updated")
 
 print(f">>> Training finished. Best model saved at: {best_model_path}")
-print(">>> Evaluating best model on validation set...")
 
 model.load_state_dict(torch.load(best_model_path))
 model.eval()
