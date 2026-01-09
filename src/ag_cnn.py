@@ -8,7 +8,7 @@ class AttentionGate(nn.Module):
         super().__init__()
         self.theta = nn.Conv2d(x_channels, inter_channels, kernel_size=1, bias=False)
         self.psi = nn.Conv2d(g_channels, inter_channels, kernel_size=1, bias=False)
-        self.phi = nn.Conv2d(inter_channels, x_channels, kernel_size=1, bias=True)
+        self.phi = nn.Conv2d(inter_channels, 1, kernel_size=1, bias=True)
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x, g):
@@ -25,7 +25,8 @@ class AttentionGate(nn.Module):
 
         f = self.relu(theta_x + psi_g)
 
-        att_map = F.softmax(self.phi(f), dim=1)
+        att_map = torch.sigmoid(self.phi(f))
+
         return x * att_map, att_map
 
 
