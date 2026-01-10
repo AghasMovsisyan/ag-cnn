@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
+# ---------------- Attention Gate ----------------
 class AttentionGate(nn.Module):
     def __init__(self, x_channels, g_channels, inter_channels):
         super().__init__()
@@ -24,12 +24,9 @@ class AttentionGate(nn.Module):
             )
 
         f = self.relu(theta_x + psi_g)
-
         att_map = F.softmax(self.phi(f), dim=1)
-
         out = x + x * att_map
         return out, att_map
-
 
 def conv_block(in_ch, out_ch):
     return nn.Sequential(
@@ -41,31 +38,30 @@ def conv_block(in_ch, out_ch):
         nn.ReLU(inplace=True),
     )
 
-
 class AG_CNN(nn.Module):
-    def __init__(self, in_channels=3, num_classes=3, dropout_p=0.3):
+    def __init__(self, in_channels=3, num_classes=3, dropout_p=0.4):
         super().__init__()
 
-        self.conv1 = conv_block(in_channels, 4)
+        self.conv1 = conv_block(in_channels, 8)
         self.pool1 = nn.MaxPool2d(2)
 
-        self.conv2 = conv_block(4, 8)
+        self.conv2 = conv_block(8, 16)
         self.pool2 = nn.MaxPool2d(2)
 
-        self.conv3 = conv_block(8, 16)
+        self.conv3 = conv_block(16, 32)
         self.pool3 = nn.MaxPool2d(2)
 
-        self.conv4 = conv_block(16, 32)
+        self.conv4 = conv_block(32, 64)  
 
-        self.att1 = AttentionGate(16, 32, inter_channels=4)
-        self.att2 = AttentionGate(8, 32, inter_channels=2)
-        self.att3 = AttentionGate(4, 32, inter_channels=1)
+        self.att1 = AttentionGate(32, 64, inter_channels=8)
+        self.att2 = AttentionGate(16, 64, inter_channels=4)
+        self.att3 = AttentionGate(8, 64, inter_channels=2)
 
         self.fc = nn.Sequential(
-            nn.Linear(16 + 8 + 4, 32),
+            nn.Linear(32 + 16 + 8, 64),
             nn.ReLU(inplace=True),
             nn.Dropout(p=dropout_p),
-            nn.Linear(32, num_classes),
+            nn.Linear(64, num_classes),
         )
 
     def forward(self, x, return_att=False):
@@ -78,10 +74,11 @@ class AG_CNN(nn.Module):
         o2, att2 = self.att2(x2, g)
         o3, att3 = self.att3(x1, g)
 
-        f1 = o1.flatten(2).sum(2)
-        f2 = o2.flatten(2).sum(2)
-        f3 = o3.flatten(2).sum(2)
+        f1 = F.adaptive_avg_pool2d(o1, 1).view(x.size(0), -1)
+        f2 = F.adaptive_avg_pool2d(o2, 1).view(x.size(0), -1)
+        f3 = F.adaptive_avg_pool2d(o3, 1).view(x.size(0), -1)
 
+        # Concatenate features and classify
         features = torch.cat([f1, f2, f3], dim=1)
         logits = self.fc(features)
 

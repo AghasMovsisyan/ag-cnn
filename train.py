@@ -14,7 +14,7 @@ from utils.metrics import evaluate_and_plot
 DATA_DIR = "data/train"
 BATCH_SIZE = 8
 LR = 5e-4
-EPOCHS = 80
+EPOCHS = 50
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 class_names = ["Car", "Human", "Noise"]
@@ -41,12 +41,12 @@ val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False)
 
 model = AG_CNN(in_channels=3, num_classes=num_classes).to(DEVICE)
 
-class_weights = torch.tensor([1.5, 1.1, 0.5]).to(DEVICE)
+class_weights = torch.tensor([1.1, 1.1, 0.5]).to(DEVICE)
 
 
 criterion = nn.CrossEntropyLoss(
     weight=class_weights,
-    label_smoothing=0.05
+    label_smoothing=0.01
 )
 
 
