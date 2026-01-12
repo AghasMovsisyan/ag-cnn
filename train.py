@@ -7,14 +7,15 @@ import os
 import glob
 
 from src.dataset import RadioDataset
-from src.ag_cnn import AG_CNN
+from src.ag_cnn import RA_GCNN          # 🔥 UPDATED
 from utils.metrics import evaluate_and_plot
 
 
+# ---------------- Config ----------------
 DATA_DIR = "data/train"
 BATCH_SIZE = 8
 LR = 5e-4
-EPOCHS = 50
+EPOCHS = 60
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 class_names = ["Car", "Human", "Noise"]
@@ -22,6 +23,8 @@ num_classes = len(class_names)
 
 os.makedirs("models", exist_ok=True)
 
+
+# ---------------- Dataset ----------------
 full_dataset = RadioDataset(DATA_DIR, train=True)
 total_size = len(full_dataset)
 
@@ -39,24 +42,35 @@ train_ds, val_ds, _ = random_split(
 train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
 val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False)
 
-model = AG_CNN(in_channels=3, num_classes=num_classes).to(DEVICE)
 
+# ---------------- Model ----------------
+model = RA_GCNN(
+    in_channels=3,
+    num_classes=num_classes,
+    dropout_p=0.4
+).to(DEVICE)
+
+
+# ---------------- Loss & Optimizer ----------------
 class_weights = torch.tensor([1.1, 1.1, 0.5]).to(DEVICE)
-
 
 criterion = nn.CrossEntropyLoss(
     weight=class_weights,
     label_smoothing=0.01
 )
 
-
-optimizer = optim.Adam(model.parameters(), lr=LR)
+optimizer = torch.optim.AdamW(
+    model.parameters(),
+    lr=1e-3,
+    weight_decay=1e-4   # ← crucial
+)
 
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer, mode="max", factor=0.5, patience=5
 )
 
 
+# ---------------- Run folder ----------------
 existing_runs = glob.glob("models/run_*")
 run_id = len(existing_runs)
 run_dir = f"models/run_{run_id}"
@@ -64,6 +78,8 @@ os.makedirs(run_dir, exist_ok=True)
 
 print(f">>> Training session folder: {run_dir}")
 
+
+# ---------------- Training Loop ----------------
 best_val_acc = 0.0
 best_model_path = ""
 
@@ -92,6 +108,7 @@ for epoch in range(EPOCHS):
         f"Epoch {epoch+1} | Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f}"
     )
 
+    # ---------- Validation ----------
     model.eval()
     all_preds, all_labels = [], []
     val_running_loss = 0.0
@@ -109,7 +126,10 @@ for epoch in range(EPOCHS):
 
     val_loss = val_running_loss / len(val_loader)
     val_acc = (
-        (torch.tensor(all_preds) == torch.tensor(all_labels)).float().mean().item()
+        (torch.tensor(all_preds) == torch.tensor(all_labels))
+        .float()
+        .mean()
+        .item()
     )
 
     print(
@@ -117,6 +137,8 @@ for epoch in range(EPOCHS):
     )
 
     scheduler.step(val_acc)
+
+    # ---------- Save ----------
     epoch_model_path = os.path.join(run_dir, f"model_epoch{epoch}.pth")
     torch.save(model.state_dict(), epoch_model_path)
 
@@ -126,9 +148,12 @@ for epoch in range(EPOCHS):
         torch.save(model.state_dict(), best_model_path)
         print(">>> Best model updated")
 
+
 print(f">>> Training finished. Best model saved at: {best_model_path}")
 
-model.load_state_dict(torch.load(best_model_path))
+
+# ---------------- Final Evaluation ----------------
+model.load_state_dict(torch.load(best_model_path, map_location=DEVICE))
 model.eval()
 
 all_preds, all_labels = [], []
@@ -149,7 +174,7 @@ evaluate_and_plot(
     y_pred=all_preds,
     class_names=class_names,
     save_dir=best_plots_dir,
-    title_prefix="Best Model Validation",
+    title_prefix="Best RA-GCNN Validation",
 )
 
 print(f">>> Evaluation finished. Plots saved at: {best_plots_dir}")

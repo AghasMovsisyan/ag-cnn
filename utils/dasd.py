@@ -1,3 +1,19 @@
+import torch
+from src.ag_cnn import AG_CNN   # քո model ֆայլը
+
+model = AG_CNN()
+model.eval()
+
+dummy = torch.randn(1, 3, 128, 128)  # input size-ը քո dataset-ի նման
+
+torch.onnx.export(
+    model,
+    dummy,  
+    "a_gcnn.onnx",
+    input_names=["Input"],
+    output_names=["Logits"],
+    opset_version=18
+)
 
 import torch
 import torch.nn as nn

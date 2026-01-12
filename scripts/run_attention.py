@@ -1,6 +1,6 @@
 import os
 import torch
-from src.ag_cnn import AG_CNN
+from src.ag_cnn import RA_GCNN
 from src.dataset import RadioDataset
 from utils.attention_visualization import save_attention_samples_by_class
 
@@ -10,12 +10,12 @@ def main():
 
     dataset = RadioDataset("data/train", train=True)
 
-    model_path = "models/run_34/best_model.pth"
+    model_path = "models/run_86/best_model.pth"
 
     run_name = os.path.basename(os.path.dirname(model_path))
     output_root = os.path.join("attention_samples", run_name)
 
-    model = AG_CNN(in_channels=3, num_classes=3).to(device)
+    model = RA_GCNN(in_channels=3, num_classes=3).to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))
 
     save_attention_samples_by_class(
